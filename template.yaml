@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: Custom Resource to deploy ARM-templates to Azure
+
+Parameters:
+  AzureClientID:
+    Description: App registration client ID from Azure
+    Type: String
+    NoEcho: true
+  AzureClientSecret:
+    Description: App registration client secret from Azure
+    Type: String
+    NoEcho: true
+  AzureTenantID:
+    Description: Azure AD tenant ID
+    Type: String
+    NoEcho: true
+
+Resources:
+  CustomResourceAzureResourceManager:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.handler
+      Runtime: python3.9
+      Timeout: 900
+      Environment:
+        Variables:
+          AZURE_CLIENT_ID: !Ref AzureClientID
+          AZURE_CLIENT_SECRET: !Ref AzureClientSecret
+          AZURE_TENANT_ID: !Ref AzureTenantID
+
+Outputs:
+  FunctionARN:
+    Value: !GetAtt CustomResourceAzureResourceManager.Arn
+    Export:
+      Name: AzureResourceManager

@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Azure environment
+
+Parameters:
+  AzureSubscriptionID:
+    Type: String
+
+  AzureResourceGroup:
+    Type: String
+
+  AzureLocation:
+    Type: String
+
+Resources:
+  AzureResourceManagerDeployment:
+    Type: Custom::AzureResourceManager
+    Properties:
+      ServiceToken: !ImportValue AzureResourceManager
+      SubscriptionID: !Ref AzureSubscriptionID
+      ResourceGroup: !Ref AzureResourceGroup
+      Location: !Ref AzureLocation
+      DeploymentName: "aws-deployment"
+      Template: |
+        {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "variables": {
+            "name": "[format('azure{0}', uniqueString(resourceGroup().id))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerInstance/containerGroups",
+              "apiVersion": "2019-12-01",
+              "name": "[variables('name')]",
+              "location": "[resourceGroup().location]",
+              "properties": {
+                "containers": [
+                  {
+                    "name": "azurecontainer",
+                    "properties": {
+                      "image": "mcr.microsoft.com/azuredocs/aci-helloworld:latest",
+                      "resources": {
+                        "requests": {
+                          "cpu": "1",
+                          "memoryInGB": "0.5"
+                        }
+                      },
+                      "ports": [
+                        {
+                          "port": "80",
+                          "protocol": "TCP"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "restartPolicy": "OnFailure",
+                "osType": "Linux",
+                "ipAddress": {
+                  "type": "Public",
+                  "ports": [
+                    {
+                      "port": "80",
+                      "protocol": "TCP"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "publicIP": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', variables('name'))).ipAddress.ip]"
+            }
+          }
+        }
+
+  HttpAPI:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: Azure API
+      Description: Sample API Gateway with an Azure backend
+      ProtocolType: HTTP
+      Target:
+        !Join [
+          "",
+          ["http://", !GetAtt AzureResourceManagerDeployment.publicIP, "/"],
+        ]
+
+Outputs:
+  ContainerIP:
+    Value: !GetAtt AzureResourceManagerDeployment.publicIP
+  HttpEndpoint:
+    Value: !GetAtt HttpAPI.ApiEndpoint
