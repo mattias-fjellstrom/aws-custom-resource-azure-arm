@@ -57,6 +57,9 @@ SAM will ask you to provide a number of inputs before it creates the custom reso
 Now we have everything we need to deploy ARM-templates from within our CloudFormation templates. A sample hello-world resource is shown below. The custom resource `ServiceToken` is available as an exported value in CloudFormation, we can reference it with `!ImportValue AzureResourceManager`.
 
 ```yaml
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Hello-World Example
+
 Parameters:
   AzureSubscriptionID:
     Type: String
@@ -104,7 +107,7 @@ Outputs:
     Value: !GetAtt AzureResourceManagerDeployment.helloWorld
 ```
 
-You must provide `SubscriptionID`, `ResourceGroup`, `Location` and `Template` when you create the resource. The `DeploymentName` is optional. If your ARM-template requires that you specify input parameters you can provide these in `TemplateParameters`. Any outputs from your deployment can be accessed with `!GetAtt <resource logical name>.<ARM-template output value>`.
+You must provide `SubscriptionID`, `ResourceGroup`, `Location` and `Template` when you create the resource. The `DeploymentName` is optional. If your ARM-template requires that you specify input parameters you can provide these in `TemplateParameters`. Any outputs from your deployment can be accessed with `!GetAtt <resource logical name>.<ARM-template output name>`.
 
 ### Advanced example
 
@@ -122,4 +125,4 @@ aws cloudformation deploy \
 
 ## Limitations
 
-- As of October 2021 there is no support to transform a Bicep template to an ARM-template using the Azure SDK for Python. As far as I know this is only possible using the Bicep C# library. Thus the example provided here does not support Bicep templates.
+- As of October 2021 there is no support to transform a Bicep template to an ARM-template using the Azure SDK for Python. As far as I know this is only possible using the Bicep C# library. Thus the example provided here does not support Bicep templates. As a work-around you can transform your Bicep templates to ARM-templates using the Bicep CLI.
